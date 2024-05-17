@@ -15,10 +15,16 @@ logo = "https://i.imgur.com/UbOXYAU.png"
 st.sidebar.image(logo)
 
 # Customize page title
-st.title("Streamlit for Geospatial Applications")
+st.title("Weather MAP BANGLADESHHHHHHHHHHHH")
 
 st.markdown(
     """
+    Project Lead:
+    Dr. Abdullah Al Fahad 
+
+    People:
+    Tahmidul Azom Sany
+    
     This multipage app template demonstrates various interactive web apps created using [streamlit](https://streamlit.io) and [leafmap](https://leafmap.org). It is an open-source project and you are very welcome to contribute to the [GitHub repository](https://github.com/opengeos/streamlit-map-template).
     """
 )
