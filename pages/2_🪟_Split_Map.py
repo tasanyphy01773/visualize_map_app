@@ -41,11 +41,11 @@ with st.expander("See source code"):
     with st.echo():
         m = leafmap.Map()
         # Load the downloaded GeoTIFF file into the map
-        m.add_raster(filename, layer_name="U-Wind Data", palette="coolwarm")
+        m.add_raster(url, indexes=[1], palette="coolwarm", layer_name="u_wind")
 
         # Use split-map functionality
         m.split_map(
-            left_layer="U-Wind Data", right_layer="ESA WorldCover 2020"
+            left_layer="u_wind", right_layer="ESA WorldCover 2020"
         )
         m.add_legend(title="ESA Land Cover", builtin_legend="ESA_WorldCover")
 
