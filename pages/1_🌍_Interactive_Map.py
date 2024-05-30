@@ -46,14 +46,6 @@ if not os.path.exists(filename):
 data = load_data(filename)
 if data[0] is not None:
     u_wind, v_wind, lats, lons = data
-    st.write(f"Shape of u_wind: {u_wind.shape}")
-    st.write(f"Shape of v_wind: {v_wind.shape}")
-    st.write(f"Shape of lats: {lats.shape}")
-    st.write(f"Shape of lons: {lons.shape}")
-
-    # Ensure correct indexing based on the shapes printed above
-    # Example assuming data is 3D and indexed as [time, lat, lon]
-    # Ensure your checks and loop limits are correctly set based on the actual shapes
 
     col1, col2 = st.columns([4, 1])
     options = list(leafmap.basemaps.keys())
@@ -66,21 +58,15 @@ if data[0] is not None:
         m = leafmap.Map(locate_control=True, latlon_control=True, draw_export=True, minimap_control=True)
         m.add_basemap(basemap)
 
-        # Adjust this example to match your data's indexing and dimensions
-        for i in range(len(lats)):
-            for j in range(len(lons)):
-                lat = lats[i]
-                lon = lons[j]
-                u = u_wind[i, j]  # Adjust based on actual data shape
-                v = v_wind[i, j]  # Adjust based on actual data shape
-                magnitude = np.sqrt(u**2 + v**2)
-                angle = np.arctan2(v, u) * 180 / np.pi  # Convert to degrees
-                # Example of adding markers
-                m.add_marker(location=(lat, lon), popup=f"Wind Speed: {magnitude:.2f}, Direction: {angle:.2f}°")
+        # Overlay the U-Wind data
+        min_lat, max_lat = lats.min(), lats.max()
+        min_lon, max_lon = lons.min(), lons.max()
+        m.add_raster(u_wind, bounds=[[min_lat, min_lon], [max_lat, max_lon]], colormap='viridis', layer_name='U-Wind')
 
         m.to_streamlit(height=700)
 else:
     st.error('Unable to load and plot data due to an error with the data files.')
+
 
 
 # import streamlit as st
