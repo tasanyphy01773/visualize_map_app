@@ -1,14 +1,16 @@
 import streamlit as st
 import netCDF4 as nc
 import numpy as np
+import matplotlib.pyplot as plt
 import requests
 import os
+from io import BytesIO
+import base64
 import folium
 from streamlit_folium import folium_static
 
 st.title('Global U-Wind Visualization')
 
-# Function to download the NetCDF file
 def download_file(url, filename):
     response = requests.get(url)
     if response.status_code == 200:
@@ -18,8 +20,7 @@ def download_file(url, filename):
     else:
         return False
 
-# Function to load data from NetCDF file
-@st.cache(allow_output_mutation=True)
+@st.cache
 def load_data(filepath):
     try:
         ds = nc.Dataset(filepath)
@@ -31,44 +32,42 @@ def load_data(filepath):
         st.error(f"Failed to load data: {e}")
         return None, None, None
 
-# Download URL and filename for the NetCDF file
 url = 'https://github.com/tasanyphy01773/visualize_map_app/releases/download/dataset/wind_global.nc'
 filename = 'wind_global.nc'
 
-# Download the file if it doesn't exist
 if not os.path.exists(filename):
-    result = download_file(url, filename)
-    if not result:
+    if not download_file(url, filename):
         st.error('Failed to download file. Please check the URL or network settings.')
 
-# Load data
 u_wind, lats, lons = load_data(filename)
 if u_wind is not None:
-    # Check if there's a time dimension and select the first timestep if present
     if u_wind.ndim == 3:  # Assuming shape is [time, lat, lon]
         u_wind = u_wind[0, :, :]
     elif u_wind.ndim == 2:  # Assuming shape is [lat, lon]
         u_wind = u_wind[:, :]
 
-    # Meshgrid for longitude and latitude
-    lon, lat = np.meshgrid(lons, lats)
-    
-    # Creating a Folium map
-    m = folium.Map(location=[0, 0], zoom_start=2)
-    
-    # Add U-Wind data to map
-    folium.raster_layers.ImageOverlay(
-        image=u_wind,
-        bounds=[[lat.min(), lon.min()], [lat.max(), lon.max()]],
-        colormap=lambda x: (1.0, 1.0, 1.0, x/np.nanmax(u_wind)),  # Normalize the opacity
-        name='U-Wind',
-    ).add_to(m)
-    
-    # Add layer control
-    folium.LayerControl().add_to(m)
-    
-    # Show map in Streamlit
-    folium_static(m)
+    # Generate a plot
+    fig, ax = plt.subplots()
+    c = ax.imshow(u_wind, cmap='viridis')
+    plt.axis('off')
+    plt.colorbar(c)
+    buf = BytesIO()
+    plt.savefig(buf, format='png')
+    plt.close(fig)
+    data = base64.b64encode(buf.getvalue()).decode()
 
+    # Create a folium map
+    m = folium.Map(location=[np.mean(lats), np.mean(lons)], zoom_start=2)
+    folium.raster_layers.ImageOverlay(
+        image=f"data:image/png;base64,{data}",
+        bounds=[[lats.min(), lons.min()], [lats.max(), lons.max()]],
+        interactive=True,
+        cross_origin=False,
+        zindex=1,
+    ).add_to(m)
+    folium.LayerControl().add_to(m)
+
+    folium_static(m)
 else:
     st.error('Unable to load and plot data due to an error with the data files.')
+s
