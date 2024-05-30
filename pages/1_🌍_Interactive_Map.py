@@ -70,4 +70,3 @@ if u_wind is not None:
     folium_static(m)
 else:
     st.error('Unable to load and plot data due to an error with the data files.')
-s
