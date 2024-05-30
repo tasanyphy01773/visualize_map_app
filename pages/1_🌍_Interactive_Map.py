@@ -1,48 +1,68 @@
 import streamlit as st
-import rasterio
-from rasterio.enums import Resampling
-from leafmap.leafmap import netcdf_to_tif, Map
+import netCDF4 as nc
+import numpy as np
+import requests
+import os
+import folium
+from streamlit_folium import folium_static
 
-# Function to convert NetCDF to GeoTIFF
-def convert_netcdf_to_geotiff(filename, tif_name):
-    netcdf_to_tif(filename, tif_name, variables=["u_wind", "v_wind"], shift_lon=True)
-    with rasterio.open(tif_name) as src:
-        profile = src.profile
-        profile.update({'crs': 'epsg:4326'})
-        corrected_tif_path = 'wind_global_corrected.tif'
-        with rasterio.open(corrected_tif_path, 'w', **profile) as dst:
-            for i in range(1, src.count + 1):
-                data = src.read(i, resampling=Resampling.nearest)
-                dst.write(data, i)
-    return corrected_tif_path
+st.title('Global U-Wind Visualization')
 
-# Streamlit UI
-st.title('Global Wind Visualization')
+# Function to download the NetCDF file
+def download_file(url, filename):
+    response = requests.get(url)
+    if response.status_code == 200:
+        with open(filename, 'wb') as f:
+            f.write(response.content)
+        return True
+    else:
+        return False
 
-# File uploader
-uploaded_file = st.file_uploader("Upload a NetCDF file", type=["nc"])
-
-if uploaded_file is not None:
-    # Save uploaded file to disk
-    with open("uploaded_wind_global.nc", "wb") as f:
-        f.write(uploaded_file.getvalue())
-    
-    filename = "uploaded_wind_global.nc"
-    tif_name = "wind_global.tif"
-    
+# Function to load data from NetCDF file
+@st.cache(allow_output_mutation=True)
+def load_data(filepath):
     try:
-        corrected_tif = convert_netcdf_to_geotiff(filename, tif_name)
-        st.success(f"GeoTIFF saved to {corrected_tif}")
-        
-        # Display the map
-        m = Map(layers_control=True)
-        m.add_raster(corrected_tif, indexes=[1], palette="coolwarm", layer_name="u_wind")
-        geojson = "https://github.com/opengeos/leafmap/raw/master/examples/data/countries.geojson"
-        m.add_geojson(geojson, layer_name="Countries")
-        m.to_streamlit(height=700)
-        
+        ds = nc.Dataset(filepath)
+        u_wind = ds.variables['u_wind'][:]
+        lats = ds.variables['lat'][:]
+        lons = ds.variables['lon'][:]
+        return u_wind, lats, lons
     except Exception as e:
-        st.error(f"An error occurred: {e}")
-else:
-    st.warning("Please upload a file to proceed.")
+        st.error(f"Failed to load data: {e}")
+        return None, None, None
 
+# Download URL and filename for the NetCDF file
+url = 'https://github.com/tasanyphy01773/visualize_map_app/releases/download/dataset/wind_global.nc'
+filename = 'wind_global.nc'
+
+# Download the file if it doesn't exist
+if not os.path.exists(filename):
+    result = download_file(url, filename)
+    if not result:
+        st.error('Failed to download file. Please check the URL or network settings.')
+
+# Load data
+u_wind, lats, lons = load_data(filename)
+if u_wind is not None:
+    # Meshgrid for longitude and latitude
+    lon, lat = np.meshgrid(lons, lats)
+    
+    # Creating a Folium map
+    m = folium.Map(location=[0, 0], zoom_start=2)
+    
+    # Add U-Wind data to map
+    folium.raster_layers.ImageOverlay(
+        image=u_wind[0, :, :],
+        bounds=[[lat.min(), lon.min()], [lat.max(), lon.max()]],
+        colormap=lambda x: (1.0, 1.0, 1.0, x/np.nanmax(u_wind)),  # Normalize the opacity
+        name='U-Wind',
+    ).add_to(m)
+    
+    # Add layer control
+    folium.LayerControl().add_to(m)
+    
+    # Show map in Streamlit
+    folium_static(m)
+
+else:
+    st.error('Unable to load and plot data due to an error with the data files.')
