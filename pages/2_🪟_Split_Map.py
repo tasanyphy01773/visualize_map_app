@@ -40,22 +40,18 @@ if not os.path.exists(filename):
 with st.expander("See source code"):
     with st.echo():
         m = leafmap.Map()
-        # Load the downloaded GeoTIFF file into the map
-        m.add_raster(url, indexes=[1], palette="coolwarm", layer_name="u_wind")
+        # Add the two indices of the GeoTIFF file to the map
+        m.add_raster(filename, layer_name="U-Wind Data 1", palette="coolwarm", band=1)
+        m.add_raster(filename, layer_name="U-Wind Data 2", palette="coolwarm", band=2)
 
         # Use split-map functionality
         m.split_map(
-            left_layer="u_wind", right_layer="ESA WorldCover 2020"
+            left_layer="U-Wind Data 1", right_layer="U-Wind Data 2"
         )
         m.add_legend(title="ESA Land Cover", builtin_legend="ESA_WorldCover")
 
 # Display the map in Streamlit
 m.to_streamlit(height=700)
-
-
-
-
-
 
 
 
@@ -87,6 +83,7 @@ m.to_streamlit(height=700)
 #     with st.echo():
 #         m = leafmap.Map()
 #         before = 'https://github.com/tasanyphy01773/visualize_map_app/releases/download/dataset/wind_global_corrected.tif'
+
 #         m.split_map(
 #             left_layer=before, right_layer="ESA WorldCover 2020"
 #         )
