@@ -1,4 +1,3 @@
-
 import streamlit as st
 import leafmap.foliumap as leafmap
 import os
@@ -42,7 +41,7 @@ with st.expander("See source code"):
     with st.echo():
         m = leafmap.Map()
         # Load the downloaded GeoTIFF file into the map
-        m.add_raster(filename, layer_name="U-Wind Data")
+        m.add_raster(filename, layer_name="U-Wind Data", palette="coolwarm")
 
         # Use split-map functionality
         m.split_map(
@@ -52,8 +51,6 @@ with st.expander("See source code"):
 
 # Display the map in Streamlit
 m.to_streamlit(height=700)
-
-
 
 
 
