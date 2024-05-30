@@ -6,3 +6,4 @@ streamlit
 netCDF4
 xarray
 streamlit-folium
+rasterio
