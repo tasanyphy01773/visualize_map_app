@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Title of the app
-st.title('Global U-Wind Visualization')
+st.title('Global U-Wind Visualization New')
 
 # Loading netCDF data
 @st.cache  # This decorator helps cache the data to speed up app reloads
@@ -17,7 +17,7 @@ def load_data(filepath):
     return u_wind, v_wind, lats, lons
 
 # File path to your netCDF file
-file_path = 'https://github.com/tasanyphy01773/CLIM711_project/blob/main/wind_global.nc' # I had to upload it in different folder
+file_path = 'https://raw.githubusercontent.com/tasanyphy01773/CLIM711_project/main/wind_global.nc' # I had to upload it in different folder
 u_wind, v_wind, lats, lons = load_data(file_path)
 
 # Create a meshgrid for plotting
