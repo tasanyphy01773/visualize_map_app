@@ -2,8 +2,19 @@ import streamlit as st
 import netCDF4 as nc
 import matplotlib.pyplot as plt
 import numpy as np
+import requests
+import os
 
 st.title('Global U-Wind Visualization')
+
+def download_file(url, filename):
+    response = requests.get(url)
+    if response.status_code == 200:
+        with open(filename, 'wb') as f:
+            f.write(response.content)
+        return True
+    else:
+        return False
 
 @st.cache
 def load_data(filepath):
@@ -18,8 +29,17 @@ def load_data(filepath):
         st.error(f"Failed to load data: {e}")
         return None, None, None, None
 
-file_path = 'https://github.com/tasanyphy01773/visualize_map_app/releases/download/dataset/wind_global.nc'
-data = load_data(file_path)
+# URL of the .nc file
+url = 'https://github.com/tasanyphy01773/visualize_map_app/releases/download/dataset/wind_global.nc'
+filename = 'wind_global.nc'
+
+# Check if file is not already downloaded
+if not os.path.exists(filename):
+    result = download_file(url, filename)
+    if not result:
+        st.error('Failed to download file. Please check the URL or network settings.')
+
+data = load_data(filename)
 if data[0] is not None:
     u_wind, v_wind, lats, lons = data
     lon, lat = np.meshgrid(lons, lats)
