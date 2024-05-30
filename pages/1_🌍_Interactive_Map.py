@@ -7,6 +7,7 @@ import os
 from PIL import Image
 import io
 import base64
+from streamlit_folium import folium_static  # Importing the correct function
 
 # Title of the app
 st.title('Global U-Wind Visualization on Interactive Map')
