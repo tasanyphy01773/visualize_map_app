@@ -13,13 +13,20 @@ import sys
 def install_package(package):
     subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 
-# Ensure localtileserver is installed
+# Ensure localtileserver and psutil are installed
 try:
     import localtileserver
 except ImportError:
     install_package('localtileserver')
 finally:
     import localtileserver
+
+try:
+    import psutil
+except ImportError:
+    install_package('psutil')
+finally:
+    import psutil
 
 import leafmap.foliumap as leafmap
 
