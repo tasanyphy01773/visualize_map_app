@@ -1,9 +1,9 @@
 import streamlit as st
 import netCDF4 as nc
 import numpy as np
+import folium
 import requests
 import os
-import leafmap.foliumap as leafmap
 
 # Title of the app
 st.title('Global U-Wind Visualization on Interactive Map')
@@ -24,13 +24,10 @@ def load_data(filepath):
     try:
         ds = nc.Dataset(filepath)
         u_wind = ds.variables['u_wind'][:]
-        v_wind = ds.variables['v_wind'][:]
-        lats = ds.variables['lat'][:]
-        lons = ds.variables['lon'][:]
-        return u_wind, v_wind, lats, lons
+        return u_wind, ds.variables['lat'][:], ds.variables['lon'][:]
     except Exception as e:
         st.error(f"Failed to load data: {e}")
-        return None, None, None, None
+        return None, None, None
 
 # URL of the .nc file and local filename
 url = 'https://github.com/tasanyphy01773/visualize_map_app/releases/download/dataset/wind_global.nc'
@@ -43,61 +40,20 @@ if not os.path.exists(filename):
         st.error('Failed to download file. Please check the URL or network settings.')
 
 # Load the data
-data = load_data(filename)
-if data[0] is not None:
-    u_wind, v_wind, lats, lons = data
+u_wind, lats, lons = load_data(filename)
+if u_wind is not None:
+    # Set up the folium map
+    m = folium.Map(location=[0, 0], zoom_start=2)
 
-    col1, col2 = st.columns([4, 1])
-    options = list(leafmap.basemaps.keys())
-    index = options.index("OpenTopoMap")
+    # Convert the U-wind data to a simple image that can be overlayed
+    u_wind_img = np.flipud(u_wind[0])  # Flip to match the latitudes if necessary
+    # Generate an image overlay
+    bounds = [[lats.min(), lons.min()], [lats.max(), lons.max()]]
+    folium.raster_layers.ImageOverlay(
+        image=u_wind_img, bounds=bounds, colormap=lambda x: (x, x, 0.5, x)
+    ).add_to(m)
 
-    with col2:
-        basemap = st.selectbox("Select a basemap:", options, index)
-
-    with col1:
-        m = leafmap.Map(locate_control=True, latlon_control=True, draw_export=True, minimap_control=True)
-        m.add_basemap(basemap)
-
-        # Overlay the U-Wind data
-        min_lat, max_lat = lats.min(), lats.max()
-        min_lon, max_lon = lons.min(), lons.max()
-        m.add_raster(u_wind, bounds=[[min_lat, min_lon], [max_lat, max_lon]], colormap='viridis', layer_name='U-Wind')
-
-        m.to_streamlit(height=700)
+    # Render in Streamlit
+    folium_static(m)
 else:
     st.error('Unable to load and plot data due to an error with the data files.')
-
-
-
-# import streamlit as st
-# import leafmap.foliumap as leafmap
-
-# markdown = """
-# A Streamlit map template
-# <https://github.com/opengeos/streamlit-map-template>
-# """
-
-# st.sidebar.title("About")
-# st.sidebar.info(markdown)
-# logo = "https://i.imgur.com/UbOXYAU.png"
-# st.sidebar.image(logo)
-
-
-# st.title("Interactive Map")
-
-# col1, col2 = st.columns([4, 1])
-# options = list(leafmap.basemaps.keys())
-# index = options.index("OpenTopoMap")
-
-# with col2:
-
-#     basemap = st.selectbox("Select a basemap:", options, index)
-
-
-# with col1:
-
-#     m = leafmap.Map(
-#         locate_control=True, latlon_control=True, draw_export=True, minimap_control=True
-#     )
-#     m.add_basemap(basemap)
-#     m.to_streamlit(height=700)
