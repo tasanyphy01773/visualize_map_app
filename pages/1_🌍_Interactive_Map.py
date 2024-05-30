@@ -21,6 +21,7 @@ netcdf_filename = 'wind_global.nc'
 if not os.path.exists(netcdf_filename):
     download_file(netcdf_url, netcdf_filename)
 
+print('dowload complete')
 # Initialize a map
 m = leafmap.Map(center=(0, 0), zoom=2, layers_control=True)
 
