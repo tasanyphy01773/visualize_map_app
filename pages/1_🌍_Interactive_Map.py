@@ -42,7 +42,7 @@ def convert_netcdf_to_geotiff(filename, tif_name, variable):
 
     with rasterio.open(tif_name, 'w', driver='GTiff', height=data.shape[1], width=data.shape[2],
                        count=1, dtype=data.dtype, crs='EPSG:4326', transform=transform) as dst:
-        dst.write(data[0, :, :], 1)  # Adjust this index based on your data
+        dst.write(data[:, :], 1)  # Adjust this index based on your data
     return tif_name
 
 # URL of the .nc file
