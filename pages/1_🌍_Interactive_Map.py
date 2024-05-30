@@ -44,6 +44,12 @@ if not os.path.exists(filename):
 # Load data
 u_wind, lats, lons = load_data(filename)
 if u_wind is not None:
+    # Check if there's a time dimension and select the first timestep if present
+    if u_wind.ndim == 3:  # Assuming shape is [time, lat, lon]
+        u_wind = u_wind[0, :, :]
+    elif u_wind.ndim == 2:  # Assuming shape is [lat, lon]
+        u_wind = u_wind[:, :]
+
     # Meshgrid for longitude and latitude
     lon, lat = np.meshgrid(lons, lats)
     
@@ -52,7 +58,7 @@ if u_wind is not None:
     
     # Add U-Wind data to map
     folium.raster_layers.ImageOverlay(
-        image=u_wind[0, :, :],
+        image=u_wind,
         bounds=[[lat.min(), lon.min()], [lat.max(), lon.max()]],
         colormap=lambda x: (1.0, 1.0, 1.0, x/np.nanmax(u_wind)),  # Normalize the opacity
         name='U-Wind',
