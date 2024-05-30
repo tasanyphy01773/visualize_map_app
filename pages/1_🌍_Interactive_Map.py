@@ -71,8 +71,8 @@ if data[0] is not None:
             for j in range(len(lons)):
                 lat = lats[i]
                 lon = lons[j]
-                u = u_wind[0, i, j]  # Adjust based on actual data shape
-                v = v_wind[0, i, j]  # Adjust based on actual data shape
+                u = u_wind[i, j]  # Adjust based on actual data shape
+                v = v_wind[i, j]  # Adjust based on actual data shape
                 magnitude = np.sqrt(u**2 + v**2)
                 angle = np.arctan2(v, u) * 180 / np.pi  # Convert to degrees
                 # Example of adding markers
