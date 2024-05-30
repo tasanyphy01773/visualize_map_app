@@ -1,10 +1,9 @@
-
 import streamlit as st
-import leafmap.foliumap as leafmap
 import netCDF4 as nc
 import numpy as np
 import requests
 import os
+import leafmap.foliumap as leafmap
 
 # Title of the app
 st.title('Global U-Wind Visualization on Interactive Map')
@@ -47,6 +46,7 @@ if not os.path.exists(filename):
 data = load_data(filename)
 if data[0] is not None:
     u_wind, v_wind, lats, lons = data
+    lon, lat = np.meshgrid(lons, lats)
 
     col1, col2 = st.columns([4, 1])
     options = list(leafmap.basemaps.keys())
@@ -59,25 +59,20 @@ if data[0] is not None:
         m = leafmap.Map(locate_control=True, latlon_control=True, draw_export=True, minimap_control=True)
         m.add_basemap(basemap)
 
-        # Add wind vectors as arrows
+        # Example of adding wind data as vectors
         for i in range(0, len(lats), 10):  # Skipping steps for performance
             for j in range(0, len(lons), 10):
                 lat = lats[i]
                 lon = lons[j]
-                u = u_wind[0, i, j]  # Assuming time dimension is first
+                u = u_wind[0, i, j]  # Adjusted for time dimension
                 v = v_wind[0, i, j]
                 magnitude = np.sqrt(u**2 + v**2)
                 angle = np.arctan2(v, u) * 180 / np.pi  # Convert to degrees
-                # Create an arrow (need to implement or find a plugin that supports it)
-                # Placeholder for actual arrow drawing, as leafmap does not support it directly
-                # Implement or use plugins like folium.plugins.BeautifyIcon if available
                 m.add_marker(location=(lat, lon), popup=f"Wind Speed: {magnitude:.2f}, Direction: {angle:.2f}°")
 
         m.to_streamlit(height=700)
 else:
     st.error('Unable to load and plot data due to an error with the data files.')
-
-
 
 
 # import streamlit as st
