@@ -1,41 +1,48 @@
 import streamlit as st
-import leafmap.foliumap as leafmap
-import os
-import requests
+import rasterio
+from rasterio.enums import Resampling
+from leafmap.leafmap import netcdf_to_tif, Map
 
-# Title of the app
-st.title('Global U-Wind Visualization')
+# Function to convert NetCDF to GeoTIFF
+def convert_netcdf_to_geotiff(filename, tif_name):
+    netcdf_to_tif(filename, tif_name, variables=["u_wind", "v_wind"], shift_lon=True)
+    with rasterio.open(tif_name) as src:
+        profile = src.profile
+        profile.update({'crs': 'epsg:4326'})
+        corrected_tif_path = 'wind_global_corrected.tif'
+        with rasterio.open(corrected_tif_path, 'w', **profile) as dst:
+            for i in range(1, src.count + 1):
+                data = src.read(i, resampling=Resampling.nearest)
+                dst.write(data, i)
+    return corrected_tif_path
 
-# Function to download the NetCDF file if not present
-def download_file(url, filename):
-    r = requests.get(url, allow_redirects=True)
-    if r.status_code == 200:
-        with open(filename, 'wb') as f:
-            f.write(r.content)
+# Streamlit UI
+st.title('Global Wind Visualization')
 
-# URL and filename of the NetCDF file
-netcdf_url = 'https://github.com/tasanyphy01773/visualize_map_app/releases/download/dataset/wind_global.nc'
-netcdf_filename = 'wind_global.nc'
+# File uploader
+uploaded_file = st.file_uploader("Upload a NetCDF file", type=["nc"])
 
-# Download the file if it does not exist locally
-if not os.path.exists(netcdf_filename):
-    download_file(netcdf_url, netcdf_filename)
+if uploaded_file is not None:
+    # Save uploaded file to disk
+    with open("uploaded_wind_global.nc", "wb") as f:
+        f.write(uploaded_file.getvalue())
+    
+    filename = "uploaded_wind_global.nc"
+    tif_name = "wind_global.tif"
+    
+    try:
+        corrected_tif = convert_netcdf_to_geotiff(filename, tif_name)
+        st.success(f"GeoTIFF saved to {corrected_tif}")
+        
+        # Display the map
+        m = Map(layers_control=True)
+        m.add_raster(corrected_tif, indexes=[1], palette="coolwarm", layer_name="u_wind")
+        geojson = "https://github.com/opengeos/leafmap/raw/master/examples/data/countries.geojson"
+        m.add_geojson(geojson, layer_name="Countries")
+        m.to_streamlit(height=700)
+        
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
+else:
+    st.warning("Please upload a file to proceed.")
 
-print('dowload complete')
-# Initialize a map
-m = leafmap.Map(center=(0, 0), zoom=2, layers_control=True)
-
-# Add the u_wind layer from the NetCDF file
-m.add_netcdf(
-    netcdf_filename,
-    variables=["u_wind"],
-    palette="coolwarm",
-    shift_lon=False,
-    layer_name="U-Wind",
-    indexes=[0],  # Assuming time dimension is first and only one time step is needed
-    x_dim='lon',  # The longitude dimension based on your NetCDF details
-    y_dim='lat'   # The latitude dimension based on your NetCDF details
-)
-
-# Display the map in the Streamlit app
-m.to_streamlit(height=700)
