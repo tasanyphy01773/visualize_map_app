@@ -1,69 +1,42 @@
 import streamlit as st
-import netCDF4 as nc
-import numpy as np
-import folium
-import requests
+import leafmap.foliumap as leafmap
 import os
-from PIL import Image
-import io
-import base64
-from streamlit_folium import folium_static  # Importing the correct function
+import requests
+
+def download_file(url, filename):
+    """ Helper function to download a file """
+    r = requests.get(url, allow_redirects=True)
+    open(filename, 'wb').write(r.content)
 
 # Title of the app
-st.title('Global U-Wind Visualization on Interactive Map')
+st.title('Global Wind Visualization')
 
-# Function to download the data file
-def download_file(url, filename):
-    response = requests.get(url)
-    if response.status_code == 200:
-        with open(filename, 'wb') as f:
-            f.write(response.content)
-        return True
-    else:
-        return False
-
-# Load wind data from netCDF file
-@st.cache
-def load_data(filepath):
-    try:
-        ds = nc.Dataset(filepath)
-        u_wind = ds.variables['u_wind'][:]
-        return u_wind, ds.variables['lat'][:], ds.variables['lon'][:]
-    except Exception as e:
-        st.error(f"Failed to load data: {e}")
-        return None, None, None
-
-# URL of the .nc file and local filename
-url = 'https://github.com/tasanyphy01773/visualize_map_app/releases/download/dataset/wind_global.nc'
-filename = 'wind_global.nc'
+# URL of the .nc file
+netcdf_url = 'https://github.com/tasanyphy01773/visualize_map_app/releases/download/dataset/wind_global.nc'
+netcdf_filename = 'wind_global.nc'
 
 # Download the file if it does not exist
-if not os.path.exists(filename):
-    result = download_file(url, filename)
-    if not result:
-        st.error('Failed to download file. Please check the URL or network settings.')
+if not os.path.exists(netcdf_filename):
+    download_file(netcdf_url, netcdf_filename)
 
-# Load the data
-u_wind, lats, lons = load_data(filename)
-if u_wind is not None:
-    # Create a map
-    m = folium.Map(location=[0, 0], zoom_start=2)
+# Initialize the map
+m = leafmap.Map(layers_control=True)
 
-    # Normalize and scale the U-Wind data to convert to image
-    scaled_wind = (255 * (u_wind[0] - np.min(u_wind[0])) / np.ptp(u_wind[0])).astype(np.uint8)
-    image = Image.fromarray(scaled_wind, mode='L')
-    buffered = io.BytesIO()
-    image.save(buffered, format="PNG")
-    encoded_image = base64.b64encode(buffered.getvalue()).decode()
+# Add each variable as a separate layer
+variables = ["v_wind", "u_wind"]
+for var in variables:
+    m.add_netcdf(
+        netcdf_filename,
+        variables=[var],
+        palette="coolwarm",
+        shift_lon=True,
+        layer_name=var,
+        indexes=[0]  # Adjust this index according to your data dimensions
+    )
 
-    # Generate the image overlay
-    img_url = f"data:image/png;base64,{encoded_image}"
-    bounds = [[lats.min(), lons.min()], [lats.max(), lons.max()]]
-    folium.raster_layers.ImageOverlay(
-        image=img_url, bounds=bounds, interactive=True, cross_origin=False
-    ).add_to(m)
+# Add GeoJSON for countries (assuming you have a valid GeoJSON file or URL)
+geojson_url = 'https://your_geojson_url_here'  # Update with your GeoJSON file URL if applicable
+m.add_geojson(geojson_url, layer_name="Countries")
 
-    # Display the map
-    folium_static(m)
-else:
-    st.error('Unable to load and plot data due to an error with the data files.')
+# Display the map in Streamlit
+folium_static(m)
