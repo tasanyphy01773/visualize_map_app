@@ -4,6 +4,9 @@ import numpy as np
 import folium
 import requests
 import os
+from PIL import Image
+import io
+import base64
 
 # Title of the app
 st.title('Global U-Wind Visualization on Interactive Map')
@@ -42,18 +45,24 @@ if not os.path.exists(filename):
 # Load the data
 u_wind, lats, lons = load_data(filename)
 if u_wind is not None:
-    # Set up the folium map
+    # Create a map
     m = folium.Map(location=[0, 0], zoom_start=2)
 
-    # Convert the U-wind data to a simple image that can be overlayed
-    u_wind_img = np.flipud(u_wind[0])  # Flip to match the latitudes if necessary
-    # Generate an image overlay
+    # Normalize and scale the U-Wind data to convert to image
+    scaled_wind = (255 * (u_wind[0] - np.min(u_wind[0])) / np.ptp(u_wind[0])).astype(np.uint8)
+    image = Image.fromarray(scaled_wind, mode='L')
+    buffered = io.BytesIO()
+    image.save(buffered, format="PNG")
+    encoded_image = base64.b64encode(buffered.getvalue()).decode()
+
+    # Generate the image overlay
+    img_url = f"data:image/png;base64,{encoded_image}"
     bounds = [[lats.min(), lons.min()], [lats.max(), lons.max()]]
     folium.raster_layers.ImageOverlay(
-        image=u_wind_img, bounds=bounds, colormap=lambda x: (x, x, 0.5, x)
+        image=img_url, bounds=bounds, interactive=True, cross_origin=False
     ).add_to(m)
 
-    # Render in Streamlit
+    # Display the map
     folium_static(m)
 else:
     st.error('Unable to load and plot data due to an error with the data files.')
