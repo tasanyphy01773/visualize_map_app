@@ -1,13 +1,12 @@
-
 import streamlit as st
 import netCDF4 as nc
-import matplotlib.pyplot as plt
 import numpy as np
 import requests
 import os
-import leafmap.foliumap as leafmap
 import rasterio
 from rasterio.enums import Resampling
+from rasterio.transform import from_bounds
+import leafmap.foliumap as leafmap
 
 st.title('Global U-Wind Visualization')
 
@@ -38,11 +37,23 @@ def convert_netcdf_to_geotiff(filename, tif_name, variable):
     data = ds.variables[variable][:]
     lats = ds.variables['lat'][:]
     lons = ds.variables['lon'][:]
-    transform = rasterio.transform.from_bounds(lons.min(), lats.min(), lons.max(), lats.max(), data.shape[2], data.shape[1])
+    
+    # Debugging information
+    st.write(f"Data shape: {data.shape}")
+    st.write(f"Lats shape: {lats.shape}")
+    st.write(f"Lons shape: {lons.shape}")
 
-    with rasterio.open(tif_name, 'w', driver='GTiff', height=data.shape[1], width=data.shape[2],
+    # Adjust this based on your data shape
+    if len(data.shape) == 3:
+        data = data[0, :, :]  # Assuming time is the first dimension
+    elif len(data.shape) != 2:
+        st.error("Unexpected data shape")
+
+    transform = from_bounds(lons.min(), lats.min(), lons.max(), lats.max(), data.shape[1], data.shape[0])
+
+    with rasterio.open(tif_name, 'w', driver='GTiff', height=data.shape[0], width=data.shape[1],
                        count=1, dtype=data.dtype, crs='EPSG:4326', transform=transform) as dst:
-        dst.write(data[:, :], 1)  # Adjust this index based on your data
+        dst.write(data, 1)
     return tif_name
 
 # URL of the .nc file
@@ -86,11 +97,6 @@ with col1:
     m.add_raster(corrected_tif_path, palette="coolwarm", layer_name="u_wind")
     m.add_basemap(basemap)
     m.to_streamlit(height=700)
-
-
-
-
-
 
 
 # import streamlit as st
