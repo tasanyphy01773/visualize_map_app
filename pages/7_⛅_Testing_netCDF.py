@@ -17,7 +17,7 @@ def load_data(filepath):
     return u_wind, v_wind, lats, lons
 
 # File path to your netCDF file
-file_path = 'tasanyphy01773/visualize_map_app/wind_global.nc'
+file_path = 'https://github.com/tasanyphy01773/CLIM711_project/blob/main/wind_global.nc' # I had to upload it in different folder
 u_wind, v_wind, lats, lons = load_data(file_path)
 
 # Create a meshgrid for plotting
