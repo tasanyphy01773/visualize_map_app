@@ -18,7 +18,7 @@ def load_data(filepath):
         st.error(f"Failed to load data: {e}")
         return None, None, None, None
 
-file_path = 'https://github.com/tasanyphy01773/visualize_map_app/blob/main/wind_global.nc'
+file_path = 'https://github.com/tasanyphy01773/visualize_map_app/releases/download/dataset/wind_global.nc'
 data = load_data(file_path)
 if data[0] is not None:
     u_wind, v_wind, lats, lons = data
